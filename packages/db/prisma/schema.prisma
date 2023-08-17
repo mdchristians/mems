@@ -1,0 +1,275 @@
+generator client {
+  provider        = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model album_media {
+  created_at             DateTime? @default(now()) @db.Timestamp(6)
+  updated_at             DateTime? @default(now()) @db.Timestamp(6)
+  id                     String    @id
+  album_id               String
+  media_id               String
+  is_suggestion          Boolean?  @default(false)
+  is_suggestion_rejected Boolean?  @default(false)
+  albums                 albums    @relation(fields: [album_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  media                  media     @relation(fields: [media_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model album_tags {
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  updated_at        DateTime? @default(now()) @db.Timestamp(6)
+  id                String    @id
+  album_id          String
+  tag_id            String
+  tag               String
+  is_auto_generated Boolean?  @default(false)
+  albums            albums    @relation(fields: [album_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tags              tags      @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model albums {
+  created_at             DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?     @default(now()) @db.Timestamp(6)
+  id                     String        @id
+  title                  String        @unique
+  description            String?
+  cover_photo            String?
+  date                   String?
+  start_date             String?
+  end_date               String?
+  shot_with              String?
+  is_suggested           Boolean?      @default(false)
+  is_suggestion_rejected Boolean?      @default(false)
+  album_media            album_media[]
+  album_tags             album_tags[]
+}
+
+model duplicates {
+  created_at                                DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at                                DateTime?            @default(now()) @db.Timestamp(6)
+  id                                        String               @id
+  media_id                                  String
+  matching_media_id                         String
+  reason                                    duplicate_matches_on
+  is_verified                               Boolean?             @default(false)
+  media_duplicates_matching_media_idTomedia media                @relation("duplicates_matching_media_idTomedia", fields: [matching_media_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  media_duplicates_media_idTomedia          media                @relation("duplicates_media_idTomedia", fields: [media_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model faces {
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  id                  String                @id
+  name                String                @unique
+  cover_photo         String?
+  facial_recognitions facial_recognitions[]
+  video_recognitions  video_recognitions[]
+}
+
+model facial_recognitions {
+  created_at      DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?    @default(now()) @db.Timestamp(6)
+  id              String       @id
+  media_id        String
+  face_id         String?
+  name            String?
+  confidence      Float?
+  embedding       Json?        @db.Json
+  source          String       @unique
+  x_max           Float
+  x_min           Float
+  y_min           Float
+  y_max           Float
+  x               Float
+  y               Float
+  height          Float
+  width           Float
+  is_unknown_face Boolean?     @default(false)
+  is_verified     Boolean?     @default(false)
+  is_removed      Boolean?     @default(false)
+  faces           faces?       @relation(fields: [face_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  media           media        @relation(fields: [media_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model locations {
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  id         String    @id
+  location   String
+}
+
+model media {
+  created_at                                     DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at                                     DateTime?             @default(now()) @db.Timestamp(6)
+  id                                             String                @id
+  date                                           String
+  year                                           String
+  month                                          String
+  day                                            String
+  name                                           String
+  file_name                                      String
+  size_raw                                       Int
+  dest_dir                                       String
+  dest_path                                      String
+  source_dir                                     String
+  source_path                                    String
+  dir                                            String
+  path                                           String
+  extension                                      String
+  height                                         Int
+  width                                          Int
+  orientation                                    Int?                  @db.SmallInt
+  adjusted_orientation                           Boolean?
+  altitude                                       Float?
+  latitude                                       Float?
+  longitude                                      Float?
+  shutter_speed                                  String?
+  aperture                                       Float?
+  city                                           String?
+  state                                          String?
+  zipcode                                        String?
+  place                                          String?
+  phash                                          String?
+  size                                           Float
+  format                                         String
+  mime_type                                      String?
+  mega_pixels                                    Float?                @db.Real
+  camera_make                                    String?
+  camera_model                                   String?
+  color_space                                    String?
+  scene_type                                     String?
+  exif_comment                                   String?
+  iso                                            Int?
+  flash                                          String?
+  focal_length                                   String?
+  white_balance                                  String?
+  lens_make                                      String?
+  lens_model                                     String?
+  lens_info                                      String?
+  duration                                       String?
+  audio_format                                   String?
+  compression                                    String?
+  compressor_id                                  String?
+  compressor_name                                String?
+  x_resolution                                   Int?
+  y_resolution                                   Int?
+  bit_depth                                      Int?
+  video_frame_rate                               Float?
+  avg_bitrate                                    String?
+  rotation                                       Int?
+  palette                                        Json?                 @db.Json
+  previews                                       Json?                 @db.Json
+  entropy                                        Float?
+  sharpness                                      Float?
+  is_opaque                                      Boolean?
+  dominant_color                                 String?
+  is_hidden                                      Boolean?              @default(false)
+  has_ml_image                                   Boolean?              @default(false)
+  media_type                                     media_type?           @default(photo)
+  album_media                                    album_media[]
+  duplicates_duplicates_matching_media_idTomedia duplicates[]          @relation("duplicates_matching_media_idTomedia")
+  duplicates_duplicates_media_idTomedia          duplicates[]          @relation("duplicates_media_idTomedia")
+  facial_recognitions                            facial_recognitions[]
+  media_tags                                     media_tags[]
+  object_recognitions                            object_recognitions[]
+  video_recognitions                             video_recognitions[]
+}
+
+model media_tags {
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  updated_at        DateTime? @default(now()) @db.Timestamp(6)
+  id                String    @id
+  media_id          String
+  tag_id            String
+  tag               String
+  is_auto_generated Boolean?  @default(false)
+  media             media     @relation(fields: [media_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tags              tags      @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model object_recognitions {
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  id         String    @id
+  media_id   String
+  object_id  String?
+  label      String
+  confidence Float?
+  x_max      Float
+  x_min      Float
+  y_min      Float
+  y_max      Float
+  x          Float
+  y          Float
+  height     Float
+  width      Float
+  media      media     @relation(fields: [media_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  objects    objects?  @relation(fields: [object_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model objects {
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  id                  String                @id
+  name                String
+  object_recognitions object_recognitions[]
+}
+
+model tags {
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  id                  String                @id
+  tag                 String
+  value               String
+  type                tag_type?             @default(media)
+  is_auto_generated   Boolean?  @default(false)
+  album_tags          album_tags[]
+  media_tags          media_tags[]
+}
+
+model video_recognitions {
+  created_at      DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?    @default(now()) @db.Timestamp(6)
+  id              String       @id
+  media_id        String
+  face_id         String
+  name            String?
+  confidence      Float?
+  faces           faces        @relation(fields: [face_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  media           media        @relation(fields: [media_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum duplicate_matches_on {
+  phash
+  metadata
+}
+
+enum media_type {
+  photo
+  video
+}
+
+enum media_type_enu {
+  photo
+  video
+}
+
+enum tag_type {
+  album
+  media
+}
+
+enum recognition_type {
+  face
+  object
+}
+
+enum recognition_type_enu {
+  person
+  place
+  object
+}

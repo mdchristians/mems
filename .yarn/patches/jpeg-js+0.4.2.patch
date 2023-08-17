@@ -1,0 +1,13 @@
+diff --git a/node_modules/jpeg-js/lib/decoder.js b/node_modules/jpeg-js/lib/decoder.js
+index 4861357..e035ab4 100644
+--- a/node_modules/jpeg-js/lib/decoder.js
++++ b/node_modules/jpeg-js/lib/decoder.js
+@@ -1083,7 +1083,7 @@ function decode(jpegData, userOpts = {}) {
+     formatAsRGBA: true,
+     tolerantDecoding: true,
+     maxResolutionInMP: 100, // Don't decode more than 100 megapixels
+-    maxMemoryUsageInMB: 512, // Don't decode if memory footprint is more than 512MB
++    maxMemoryUsageInMB: 2048, // Don't decode if memory footprint is more than 512MB
+   };
+ 
+   var opts = {...defaultOpts, ...userOpts};

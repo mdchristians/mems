@@ -1,0 +1,38 @@
+{
+  "name": "mems",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "app/",
+    "server/",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "run-p dev:server dev:client",
+    "reset": "run-p reset:images reset:db",
+    "reset:images": "yarn workspace @mems/server reset:images",
+    "reset:db": "yarn workspace @mems/db reset && yarn workspace @mems/db db-push",
+    "dev:client": "yarn workspace @mems/app dev",
+    "dev:server": "yarn workspace @mems/server dev",
+    "generate": "yarn workspace @mems/db generate",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "clean": "rm -rf yarn.lock node_modules ./.yarn/cache ./.yarn/install-state.gz ./app/node_modules ./app/.next ./server/node_modules"
+  },
+  "dependencies": {
+    "cross-env": "7.0.3"
+  },
+  "devDependencies": {
+    "@types/prettier": "2.7.3",
+    "eslint": "8.47.0",
+    "is-ci": "3.0.1",
+    "npm-run-all": "4.1.5",
+    "prettier": "3.0.1",
+    "rimraf": "5.0.1"
+  },
+  "engines": {
+    "node": ">=18.22.0",
+    "yarn": ">=1.22.0",
+    "npm": "please-use-yarn"
+  },
+  "packageManager": "yarn@4.0.0-rc.48"
+}

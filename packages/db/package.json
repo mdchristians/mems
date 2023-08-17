@@ -1,0 +1,26 @@
+{
+  "name": "@mems/db",
+  "version": "0.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "license": "MIT",
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- prisma studio",
+    "db-push": "dotenv -e ../../.env -- prisma db push",
+    "pull": "dotenv -e ../../.env -- prisma db pull",
+    "reset": "dotenv -e ../../.env -- prisma migrate reset",
+    "generate": "dotenv -e ../../.env -- prisma generate",
+    "postinstall": "dotenv -e ../../.env -- prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "4.8.0"
+  },
+  "devDependencies": {
+    "dotenv-cli": "6.0.0",
+    "prisma": "4.8.0",
+    "typescript": "5.1.6"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,26 @@
+#version: "3"
+name: mems-dev
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=mems
+      - POSTGRES_PASSWORD=mems
+      - POSTGRES_USER=mems
+    ports:
+      - target: 5432
+        published: 5432
+        protocol: tcp
+    volumes:
+      - db_data:/var/lib/postgresql/data:rw
+
+  redis:
+    image: redis:latest
+    ports:
+      - target: 6379
+        published: 6379
+        protocol: tcp
+
+volumes:
+  db_data:
