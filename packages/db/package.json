@@ -12,15 +12,15 @@
     "generate": "dotenv -e ../../.env -- prisma generate",
     "postinstall": "dotenv -e ../../.env -- prisma generate"
   },
-  "dependencies": {
-    "@prisma/client": "4.8.0"
-  },
   "devDependencies": {
     "dotenv-cli": "6.0.0",
-    "prisma": "4.8.0",
+    "prisma": "5.2.0",
     "typescript": "5.1.6"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "@prisma/client": "5.2.0"
   }
 }

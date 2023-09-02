@@ -1,17 +1,14 @@
-import { getOrCreateRecognitionOption } from "@/services";
-import * as trpc from "@trpc/server";
 import { z } from "zod";
-import { Context } from "../trpc";
-import { getConfidence } from "./utils";
-import { logger } from "../../core/logger";
+import { router, publicProcedure } from "../trpc";
 
-export const facesRouter = trpc
-  .router<Context>()
-  .query("get-face", {
-    input: z.object({
-      id: z.string(),
-    }),
-    async resolve({ ctx, input }) {
+export const facesRouter = router({
+  "get-face": publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       const face = await ctx.prisma.faces.findUniqueOrThrow({
         where: { id: input.id },
         select: {
@@ -36,30 +33,29 @@ export const facesRouter = trpc
         ...face,
         recognitions,
       };
-    },
-  })
-  .query("get-faces", {
-    async resolve({ ctx }) {
-      return ctx.prisma.faces.findMany({
-        select: {
-          id: true,
-          name: true,
-          cover_photo: true,
-          _count: {
-            select: { facial_recognitions: true },
-          },
+    }),
+  "get-faces": publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.faces.findMany({
+      select: {
+        id: true,
+        name: true,
+        cover_photo: true,
+        _count: {
+          select: { facial_recognitions: true },
         },
-      });
-    },
-  })
+      },
+    });
+  }),
   /**
    * Removes a face option and all recognitions
    */
-  .mutation("remove-face", {
-    input: z.object({
-      faceId: z.string(),
-    }),
-    async resolve({ ctx, input }) {
+  "remove-face": publicProcedure
+    .input(
+      z.object({
+        faceId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       const unknownFaceObject = await ctx.prisma.faces.findUniqueOrThrow({
         where: { name: "unknown" },
       });
@@ -87,14 +83,15 @@ export const facesRouter = trpc
       });
 
       return Promise.all([recognitionsPromise, facePromise]);
-    },
-  })
-  .mutation("update-face-cover-photo", {
-    input: z.object({
-      faceId: z.string(),
-      recognitionId: z.string(),
     }),
-    async resolve({ ctx, input }) {
+  "update-face-cover-photo": publicProcedure
+    .input(
+      z.object({
+        faceId: z.string(),
+        recognitionId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       const recognitionPhoto = await ctx.prisma.facial_recognitions.findUniqueOrThrow({
         where: {
           id: input.recognitionId,
@@ -109,5 +106,5 @@ export const facesRouter = trpc
           cover_photo: recognitionPhoto.source,
         },
       });
-    },
-  });
+    }),
+});

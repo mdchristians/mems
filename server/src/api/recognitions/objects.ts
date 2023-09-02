@@ -1,14 +1,14 @@
-import * as trpc from "@trpc/server";
 import { z } from "zod";
-import { Context } from "../trpc";
+import { router, publicProcedure } from "../trpc";
 
-export const objectsRouter = trpc
-  .router<Context>()
-  .mutation("remove", {
-    input: z.object({
-      id: z.string().uuid(),
-    }),
-    async resolve({ ctx, input }) {
+export const objectsRouter = router({
+  remove: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       try {
         // Verify recognition exists
         await ctx.prisma.object_recognitions.findUniqueOrThrow({
@@ -23,19 +23,20 @@ export const objectsRouter = trpc
           },
         });
       } catch (err) {
-        throw new trpc.TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Recognition not found",
-          cause: err,
-        });
+        // return Error({
+        //   code: "INTERNAL_SERVER_ERROR",
+        //   message: "Recognition not found",
+        //   cause: err,
+        // });
       }
-    },
-  })
-  .mutation("remove-option", {
-    input: z.object({
-      id: z.string().uuid(),
     }),
-    async resolve({ ctx, input }) {
+  "remove-option": publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       try {
         // Verify recognition exists
         await ctx.prisma.object_recognitions.findUniqueOrThrow({
@@ -55,29 +56,28 @@ export const objectsRouter = trpc
 
         return ctx.prisma.$transaction([deletedObjects, deletedObjectOption]);
       } catch (err) {
-        throw new trpc.TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Recognition option not found",
-          cause: err,
-        });
+        // throw new trpc.TRPCError({
+        //   code: "INTERNAL_SERVER_ERROR",
+        //   message: "Recognition option not found",
+        //   cause: err,
+        // });
       }
-    },
-  })
-  .query("get-options", {
-    async resolve({ ctx }) {
-      return ctx.prisma.objects.findMany({
-        select: {
-          id: true,
-          name: true,
-        },
-      });
-    },
-  })
-  .query("get-object-photos", {
-    input: z.object({
-      id: z.string().uuid(),
     }),
-    async resolve({ ctx, input }) {
+  "get-options": publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.objects.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+  }),
+  "get-object-photos": publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       const recognitions = await ctx.prisma.object_recognitions.findMany({
         where: {
           object_id: input.id,
@@ -105,5 +105,5 @@ export const objectsRouter = trpc
           dir: true,
         },
       });
-    },
-  });
+    }),
+});

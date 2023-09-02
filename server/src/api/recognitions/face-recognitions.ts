@@ -1,15 +1,16 @@
 import { getOrCreateRecognitionOption, recognizeUnknowns } from "@/services";
 import * as trpc from "@trpc/server";
 import { z } from "zod";
-import { Context } from "../trpc";
+import { router, publicProcedure } from "../trpc";
 
-export const faceRecognitionsRouter = trpc
-  .router<Context>()
-  .query("get-recognitions", {
-    input: z.object({
-      id: z.string(),
-    }),
-    async resolve({ ctx, input }) {
+export const faceRecognitionsRouter = router({
+  "get-recognitions": publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       return ctx.prisma.facial_recognitions.findMany({
         where: { face_id: input.id },
         select: {
@@ -21,13 +22,14 @@ export const faceRecognitionsRouter = trpc
           media_id: true,
         },
       });
-    },
-  })
-  .query("get-recognition-media", {
-    input: z.object({
-      mediaId: z.string(),
     }),
-    async resolve({ ctx, input }) {
+  "get-recognition-media": publicProcedure
+    .input(
+      z.object({
+        mediaId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       return ctx.prisma.media.findUnique({
         where: { id: input.mediaId },
         select: {
@@ -35,13 +37,14 @@ export const faceRecognitionsRouter = trpc
           name: true,
         },
       });
-    },
-  })
-  .mutation("remove-recognitions", {
-    input: z.object({
-      recognitionIds: z.string().array(),
     }),
-    async resolve({ ctx, input }) {
+  "remove-recognitions": publicProcedure
+    .input(
+      z.object({
+        recognitionIds: z.string().array(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       const unknownFaceObject = await ctx.prisma.faces.findUniqueOrThrow({
         where: { name: "unknown" },
       });
@@ -62,13 +65,14 @@ export const faceRecognitionsRouter = trpc
       });
 
       return ctx.prisma.$transaction(batchedUpdates);
-    },
-  })
-  .mutation("remove-unknown-recognitions", {
-    input: z.object({
-      recognitionIds: z.string().array(),
     }),
-    async resolve({ ctx, input }) {
+  "remove-unknown-recognitions": publicProcedure
+    .input(
+      z.object({
+        recognitionIds: z.string().array(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       const unknownFaceObject = await ctx.prisma.faces.findUniqueOrThrow({
         where: { name: "unknown" },
       });
@@ -89,15 +93,16 @@ export const faceRecognitionsRouter = trpc
       });
 
       return ctx.prisma.$transaction(batchedUpdates);
-    },
-  })
-  .mutation("update-recognitions", {
-    input: z.object({
-      faceId: z.string().uuid().optional(),
-      name: z.string(),
-      recognitionIds: z.string().array(),
     }),
-    async resolve({ ctx, input }) {
+  "update-recognitions": publicProcedure
+    .input(
+      z.object({
+        faceId: z.string().uuid().optional(),
+        name: z.string(),
+        recognitionIds: z.string().array(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // If a faceId exists, we know we're the recognitions belong to an existing face
       if (input.faceId) {
         const batchedUpdates = input.recognitionIds.map((id) => {
@@ -160,5 +165,5 @@ export const faceRecognitionsRouter = trpc
 
         return recognizeUnknowns();
       }
-    },
-  });
+    }),
+});

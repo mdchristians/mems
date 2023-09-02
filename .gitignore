@@ -5,6 +5,8 @@
 .env.local
 .env.*.local
 
+app/
+
 # security: atlassian/changeset
 
 **/.netrc

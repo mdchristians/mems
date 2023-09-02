@@ -1,117 +1,112 @@
-import * as trpc from "@trpc/server";
+import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
-import { Context } from "../trpc";
 import { v4 as uuidv4 } from "uuid";
 import { extractAlbumDetails } from "@/services/extract-album-details";
 import { getOrCreateTagOption } from "@/services";
 
-export const albumRouter = trpc
-  .router<Context>()
-  .query("tag-options", {
-    async resolve({ ctx }) {
-      return ctx.prisma.album_tags.findMany({
-        distinct: ["tag"],
-        select: {
-          id: true,
-          tag: true,
-        },
-      });
-    },
-  })
-  .query("by-id", {
-    input: z.string().uuid(),
-    async resolve({ ctx, input }) {
-      const album = await ctx.prisma.albums.findFirst({
-        where: { id: input },
-        select: {
-          id: true,
-          title: true,
-          date: true,
-          description: true,
-          cover_photo: true,
-          is_suggested: true,
-          album_tags: {
-            select: {
-              id: true,
-              tag: true,
-            },
+export const albumRouter = router({
+  "tag-options": publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.album_tags.findMany({
+      distinct: ["tag"],
+      select: {
+        id: true,
+        tag: true,
+      },
+    });
+  }),
+  "by-id": publicProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+    const album = await ctx.prisma.albums.findFirst({
+      where: { id: input },
+      select: {
+        id: true,
+        title: true,
+        date: true,
+        description: true,
+        cover_photo: true,
+        is_suggested: true,
+        album_tags: {
+          select: {
+            id: true,
+            tag: true,
           },
-          album_media: {
-            select: {
-              // id: true,
-              media: {
-                select: {
-                  id: true,
-                  created_at: true,
-                  date: true,
-                  orientation: true,
-                  height: true,
-                  width: true,
-                  dir: true,
-                },
+        },
+        album_media: {
+          select: {
+            // id: true,
+            media: {
+              select: {
+                id: true,
+                created_at: true,
+                date: true,
+                orientation: true,
+                height: true,
+                width: true,
+                dir: true,
               },
             },
           },
         },
-      });
+      },
+    });
 
-      const tags = album?.album_tags || [];
-      const media = album?.album_media.map((p) => p.media) || [];
-      const mediaIds = media?.map((p) => p.id);
+    const tags = album?.album_tags || [];
+    const media = album?.album_media.map((p) => p.media) || [];
+    const mediaIds = media?.map((p) => p.id);
 
-      const recognitionsFetch = await ctx.prisma.facial_recognitions.findMany({
-        where: {
-          AND: {
-            media_id: {
-              in: mediaIds,
-            },
-            is_unknown_face: {
-              equals: false,
-            },
+    const recognitionsFetch = await ctx.prisma.facial_recognitions.findMany({
+      where: {
+        AND: {
+          media_id: {
+            in: mediaIds,
+          },
+          is_unknown_face: {
+            equals: false,
           },
         },
-        distinct: ["name"],
-        select: {
-          id: true,
-          name: true,
-          faces: {
-            select: {
-              id: true,
-              cover_photo: true,
-            },
+      },
+      distinct: ["name"],
+      select: {
+        id: true,
+        name: true,
+        faces: {
+          select: {
+            id: true,
+            cover_photo: true,
           },
         },
-      });
+      },
+    });
 
-      const recognitions =
-        recognitionsFetch.map((rec) => {
-          const { faces, ...rest } = rec;
-          return {
-            ...rest,
-            recId: faces?.id,
-            photo: faces?.cover_photo,
-          };
-        }) || [];
+    const recognitions =
+      recognitionsFetch.map((rec) => {
+        const { faces, ...rest } = rec;
+        return {
+          ...rest,
+          recId: faces?.id,
+          photo: faces?.cover_photo,
+        };
+      }) || [];
 
-      return {
-        id: album?.id,
-        title: album?.title,
-        date: album?.date,
-        description: album?.description,
-        cover_photo: album?.cover_photo,
-        is_suggested: album?.is_suggested,
-        recognitions: recognitions ?? [],
-        tags: tags ?? [],
-        media: media ?? [],
-      };
-    },
-  })
-  .mutation("create", {
-    input: z.object({
-      title: z.string().min(2),
-      mediaIds: z.string().array().nonempty(),
-    }),
-    async resolve({ ctx, input }) {
+    return {
+      id: album?.id,
+      title: album?.title,
+      date: album?.date,
+      description: album?.description,
+      cover_photo: album?.cover_photo,
+      is_suggested: album?.is_suggested,
+      recognitions: recognitions ?? [],
+      tags: tags ?? [],
+      media: media ?? [],
+    };
+  }),
+  create: publicProcedure
+    .input(
+      z.object({
+        title: z.string().min(2),
+        mediaIds: z.string().array().nonempty(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       const albumId = uuidv4();
       let coverPhotoPath = null;
 
@@ -153,14 +148,15 @@ export const albumRouter = trpc
       return ctx.prisma.album_media.createMany({
         data: albumPhotos,
       });
-    },
-  })
-  .mutation("add-photos", {
-    input: z.object({
-      albumId: z.string().min(1),
-      mediaIds: z.array(z.string().uuid()).nonempty(),
     }),
-    async resolve({ ctx, input }) {
+  "add-photos": publicProcedure
+    .input(
+      z.object({
+        albumId: z.string().min(1),
+        mediaIds: z.array(z.string().uuid()).nonempty(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       const currentPhotosInAlbum = await ctx.prisma.album_media.findMany({
         where: {
           album_id: input.albumId,
@@ -183,37 +179,38 @@ export const albumRouter = trpc
       return ctx.prisma.album_media.createMany({
         data: albumPhotos,
       });
-    },
-  })
-  .mutation("update-details", {
-    input: z.object({
-      albumId: z.string().min(1),
-      title: z.string().optional(),
-      cover_photo: z.string().optional(),
-      description: z.string().optional(),
-      tags: z
-        .object({
-          removed: z
-            .array(
-              z.object({
-                id: z.string(),
-                tag: z.string(),
-              })
-            )
-            .optional(),
-          added: z
-            .array(
-              z.object({
-                id: z.string(),
-                tag: z.string(),
-                isNew: z.string().optional(),
-              })
-            )
-            .optional(),
-        })
-        .optional(),
     }),
-    async resolve({ ctx, input }) {
+  "update-details": publicProcedure
+    .input(
+      z.object({
+        albumId: z.string().min(1),
+        title: z.string().optional(),
+        cover_photo: z.string().optional(),
+        description: z.string().optional(),
+        tags: z
+          .object({
+            removed: z
+              .array(
+                z.object({
+                  id: z.string(),
+                  tag: z.string(),
+                })
+              )
+              .optional(),
+            added: z
+              .array(
+                z.object({
+                  id: z.string(),
+                  tag: z.string(),
+                  isNew: z.string().optional(),
+                })
+              )
+              .optional(),
+          })
+          .optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       const { albumId, tags, ...details } = input;
       const updateProms = [];
 
@@ -269,14 +266,15 @@ export const albumRouter = trpc
       }
 
       ctx.prisma.$transaction(updateProms);
-    },
-  })
-  .mutation("delete-photos-from-album", {
-    input: z.object({
-      albumId: z.string(),
-      mediaIds: z.string().array(),
     }),
-    async resolve({ ctx, input }) {
+  "delete-photos-from-album": publicProcedure
+    .input(
+      z.object({
+        albumId: z.string(),
+        mediaIds: z.string().array(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       return ctx.prisma.album_media.deleteMany({
         where: {
           album_id: input.albumId,
@@ -285,13 +283,14 @@ export const albumRouter = trpc
           },
         },
       });
-    },
-  })
-  .mutation("delete", {
-    input: z.object({
-      albumId: z.string().min(1),
     }),
-    async resolve({ ctx, input }) {
+  delete: publicProcedure
+    .input(
+      z.object({
+        albumId: z.string().min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       const removeAlbumPhotos = ctx.prisma.album_media.deleteMany({
         where: {
           album_id: input.albumId,
@@ -311,13 +310,14 @@ export const albumRouter = trpc
       });
 
       await ctx.prisma.$transaction([removeAlbumPhotos, removeAlbumTags, removeAlbums]);
-    },
-  })
-  .mutation("remove-suggestion", {
-    input: z.object({
-      albumId: z.string().min(1),
     }),
-    async resolve({ ctx, input }) {
+  "remove-suggestion": publicProcedure
+    .input(
+      z.object({
+        albumId: z.string().min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       return ctx.prisma.albums.update({
         where: {
           id: input.albumId,
@@ -326,13 +326,14 @@ export const albumRouter = trpc
           is_suggestion_rejected: true,
         },
       });
-    },
-  })
-  .mutation("convert-suggestion", {
-    input: z.object({
-      albumId: z.string().min(1),
     }),
-    async resolve({ ctx, input }) {
+  "convert-suggestion": publicProcedure
+    .input(
+      z.object({
+        albumId: z.string().min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       return ctx.prisma.albums.update({
         where: {
           id: input.albumId,
@@ -341,5 +342,5 @@ export const albumRouter = trpc
           is_suggested: false,
         },
       });
-    },
-  });
+    }),
+});

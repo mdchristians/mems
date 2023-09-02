@@ -1,14 +1,14 @@
-import * as trpc from "@trpc/server";
 import { z } from "zod";
-import { Context } from "../trpc";
+import { router, publicProcedure } from "../trpc";
 
-export const photoRouter = trpc
-  .router<Context>()
-  .query("by-id", {
-    input: z.object({
-      id: z.string().uuid(),
-    }),
-    async resolve({ ctx, input }) {
+export const photoRouter = router({
+  "by-id": publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       return ctx.prisma.media.findFirst({
         where: { id: input.id },
         select: {
@@ -56,13 +56,14 @@ export const photoRouter = trpc
           },
         },
       });
-    },
-  })
-  .query("download", {
-    input: z.object({
-      id: z.string().uuid(),
     }),
-    async resolve({ ctx, input }) {
+  download: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       const filePath = await ctx.prisma.media.findFirst({
         where: { id: input.id },
         select: {
@@ -73,5 +74,5 @@ export const photoRouter = trpc
       if (filePath) {
         ctx.res.download(filePath?.path);
       }
-    },
-  });
+    }),
+});

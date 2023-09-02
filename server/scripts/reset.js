@@ -7,7 +7,7 @@ const redis = new Redis(process.env.REDIS_PORT, process.env.REDIS_HOST);
 
 // defaults
 const BASE = path.join(process.cwd(), "media");
-const M_SETUP = path.join(BASE, "full");
+const M_SETUP = path.join(BASE, "demo");
 
 const M_SOURCE = process.env.MEDIA_SOURCE;
 const M_DEST = process.env.MEDIA_DESTINATION;

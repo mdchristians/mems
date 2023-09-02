@@ -1,42 +1,48 @@
-import * as trpc from "@trpc/server";
+import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
-import { Context } from "../trpc";
 
-export const albumsRouter = trpc
-  .router<Context>()
-  .query("all", {
-    async resolve({ ctx }) {
-      return ctx.prisma.albums.findMany({
-        where: {
-          is_suggestion_rejected: false,
+export const albumsRouter = router({
+  /**
+   * Get all albums with counts of internal media
+   */
+  all: publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.albums.findMany({
+      where: {
+        is_suggestion_rejected: false,
+      },
+      include: {
+        _count: {
+          select: { album_media: true },
         },
-        include: {
-          _count: {
-            select: { album_media: true },
-          },
-        },
-      });
-    },
-  })
-  .query("existing", {
-    async resolve({ ctx }) {
-      return ctx.prisma.albums.findMany({
-        where: {
-          is_suggestion_rejected: false,
-          is_suggested: false,
-        },
-        select: {
-          id: true,
-          title: true,
-        },
-      });
-    },
-  })
-  .mutation("delete", {
-    input: z.object({
-      albumIds: z.array(z.string().min(1)).nonempty(),
-    }),
-    async resolve({ ctx, input }) {
+      },
+    });
+  }),
+
+  /**
+   * Get all non-suggested albums ID and TITLE
+   */
+  existing: publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.albums.findMany({
+      where: {
+        is_suggestion_rejected: false,
+        is_suggested: false,
+      },
+      select: {
+        id: true,
+        title: true,
+      },
+    });
+  }),
+  /**
+   * Remove album(s)
+   */
+  delete: publicProcedure
+    .input(
+      z.object({
+        albumIds: z.array(z.string().min(1)).nonempty(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       const removeAlbumPhotos = ctx.prisma.album_media.deleteMany({
         where: {
           album_id: {
@@ -62,5 +68,5 @@ export const albumsRouter = trpc
       });
 
       return ctx.prisma.$transaction([removeAlbumPhotos, removeAlbumTags, removeAlbums]);
-    },
-  });
+    }),
+});

@@ -15,7 +15,7 @@ export async function detectFromImage(job: Job, done: DoneCallback) {
   let predictionQueue: any[] = [];
 
   if (!fs.existsSync(imagePath)) {
-    logger.warn(`${imagePath} does not exist!`);
+    logger.warn(`[Detect from image] ${imagePath} does not exist!`);
     return done();
   }
 

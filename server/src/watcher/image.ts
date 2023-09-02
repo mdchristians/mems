@@ -35,7 +35,7 @@ export async function processImage(imgSourcePath: string, queueCallback: done) {
     const imgPhash = await phash(image);
     const isPotentialDupe = await doesPhashExist(imgPhash);
 
-    const imgPath = metadata.has_ml_image ? path.join(metadata.dest_dir, "ml.jpeg") : metadata.path;
+    const imgPath = metadata.has_ml_image ? path.join(metadata.dest_dir, "ml.jpeg") : metadata.dest_path;
     const previews = Object.fromEntries(
       PREVIEW_SIZES.map((size) => [size, `${metadata.dest_dir}/${metadata.id}_w${size}.webp`])
     );
@@ -82,11 +82,14 @@ export async function processImage(imgSourcePath: string, queueCallback: done) {
           // }
 
           // Just Move the file
-          return fs.move(imgSourcePath, metadata.dest_path);
-        }
+          fs.moveSync(imgSourcePath, metadata.dest_path);
 
-        // just copy the file
-        return fs.copy(imgSourcePath, metadata.dest_path);
+          return Promise.resolve();
+        } else {
+          // just copy the file
+          fs.copySync(imgSourcePath, metadata.dest_path);
+          return Promise.resolve();
+        }
       })
       .then(async () => {
         try {
